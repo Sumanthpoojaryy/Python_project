@@ -1,5 +1,3 @@
-import csv
-
 class Student:
     def __init__(self, student_id, name, math, physics, chemistry, biology):
         self.student_id = student_id
@@ -8,85 +6,113 @@ class Student:
         self.physics = int(physics)
         self.chemistry = int(chemistry)
         self.biology = int(biology)
-        self.average = self.calculate_average()
-
-    def calculate_average(self):
-        return (self.math + self.physics + self.chemistry + self.biology) / 4
+        self.average = (self.math + self.physics + self.chemistry + self.biology) / 4
 
 
-def analyze_grades(input_file, output_file):
+def analyze_grades(input_file):
+
     students = []
 
-    try:
-        with open(input_file, 'r') as file:
-            reader = csv.DictReader(file)
-            for row in reader:
-                student = Student(
-                    row['StudentID'],
-                    row['Name'],
-                    row['Math'],
-                    row['Physics'],
-                    row['Chemistry'],
-                    row['Biology']
-                )
-                students.append(student)
+    # Read file
+    with open(input_file, "r") as file:
+        lines = file.readlines()
 
-    except FileNotFoundError:
-        print("Error: Input file not found.")
-        return
+    # Process lines (skip header)
+    for line in lines[1:]:
+
+        line = line.strip()
+
+        if line == "":        # skip empty lines
+            continue
+
+        data = line.split(",")
+
+        if len(data) != 6:    # skip incorrect format
+            continue
+
+        student = Student(
+            data[0],
+            data[1],
+            data[2],
+            data[3],
+            data[4],
+            data[5]
+        )
+
+        students.append(student)
 
     total_students = len(students)
 
-    # Subject-wise calculations
-    subjects = ['math', 'physics', 'chemistry', 'biology']
-    subject_totals = {sub: 0 for sub in subjects}
-    subject_scores = {sub: [] for sub in subjects}
+    if total_students == 0:
+        print("No valid student data found.")
+        return
 
-    for student in students:
-        for sub in subjects:
-            score = getattr(student, sub)
-            subject_totals[sub] += score
-            subject_scores[sub].append(score)
+    # Subject totals
+    math_total = physics_total = chemistry_total = biology_total = 0
 
-    subject_averages = {sub: subject_totals[sub]/total_students for sub in subjects}
-    overall_class_average = sum([s.average for s in students]) / total_students
+    math_scores = []
+    physics_scores = []
+    chemistry_scores = []
+    biology_scores = []
+
+    for s in students:
+        math_total += s.math
+        physics_total += s.physics
+        chemistry_total += s.chemistry
+        biology_total += s.biology
+
+        math_scores.append(s.math)
+        physics_scores.append(s.physics)
+        chemistry_scores.append(s.chemistry)
+        biology_scores.append(s.biology)
+
+    # Subject averages
+    math_avg = math_total / total_students
+    physics_avg = physics_total / total_students
+    chemistry_avg = chemistry_total / total_students
+    biology_avg = biology_total / total_students
+
+    # Overall average
+    overall_avg = sum(s.average for s in students) / total_students
 
     # Top 3 students
-    top_3 = sorted(students, key=lambda x: x.average, reverse=True)[:3]
+    students.sort(key=lambda x: x.average, reverse=True)
+    top_3 = students[:3]
 
-    # Students scoring above 90 in any subject
-    above_90_students = [
-        s for s in students
-        if s.math > 90 or s.physics > 90 or s.chemistry > 90 or s.biology > 90
-    ]
+    # Students scoring above 90
+    above_90 = []
+    for s in students:
+        if s.math > 90 or s.physics > 90 or s.chemistry > 90 or s.biology > 90:
+            above_90.append(s)
 
-    # Write Report
-    with open(output_file, 'w') as report:
-        report.write("===== STUDENT PERFORMANCE REPORT =====\n\n")
-        report.write(f"Total Students: {total_students}\n\n")
+    # ===== PRINT REPORT =====
+    print("\n===== STUDENT PERFORMANCE REPORT =====\n")
 
-        report.write("Class Average Per Subject:\n")
-        for sub in subjects:
-            report.write(f"{sub.capitalize()}: {subject_averages[sub]:.2f}\n")
+    print("Total Students:", total_students)
 
-        report.write(f"\nOverall Class Average: {overall_class_average:.2f}\n\n")
+    print("\nClass Average Per Subject:")
+    print("Math:", round(math_avg, 2))
+    print("Physics:", round(physics_avg, 2))
+    print("Chemistry:", round(chemistry_avg, 2))
+    print("Biology:", round(biology_avg, 2))
 
-        report.write("Top 3 Students:\n")
-        for student in top_3:
-            report.write(f"{student.name} - {student.average:.2f}\n")
+    print("\nOverall Class Average:", round(overall_avg, 2))
 
-        report.write("\nStudents Scoring Above 90 in Any Subject:\n")
-        for student in above_90_students:
-            report.write(f"{student.name}\n")
+    print("\nTop 3 Students:")
+    for s in top_3:
+        print(s.name, "-", round(s.average, 2))
 
-        report.write("\nSubject-wise Highest and Lowest Scores:\n")
-        for sub in subjects:
-            report.write(
-                f"{sub.capitalize()} - Highest: {max(subject_scores[sub])}, "
-                f"Lowest: {min(subject_scores[sub])}\n"
-            )
+    print("\nStudents Scoring Above 90 in Any Subject:")
+    for s in above_90:
+        print(s.name)
 
-    print("Report generated successfully!")
+    print("\nSubject-wise Highest and Lowest Scores:")
+    print("Math - Highest:", max(math_scores), "Lowest:", min(math_scores))
+    print("Physics - Highest:", max(physics_scores), "Lowest:", min(physics_scores))
+    print("Chemistry - Highest:", max(chemistry_scores), "Lowest:", min(chemistry_scores))
+    print("Biology - Highest:", max(biology_scores), "Lowest:", min(biology_scores))
 
 
-analyze_grades("students.csv", "report.txt")
+# Call function
+analyze_grades("student.txt")
+
